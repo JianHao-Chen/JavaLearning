@@ -1,7 +1,7 @@
-package jvm.classFileFormat;
+package jvm.classFileFormat.Attribute;
 
 /**
- * 		~~~~~~~~~~~~	属性表(attribute_info)	~~~~~~~~~~~~~~~~
+ * ~~~~~~~~~~~~	属性表(attribute_info)	~~~~~~~~~~~~~~~~
  * 
  * 	在Class文件、字段表(field_info)、方法表(method_info)都可以带自己的属性表集合。
  * 	
@@ -17,6 +17,10 @@ package jvm.classFileFormat;
  *	CONSTANT_Utf8_info 的数据结构，它表示一个这个 attribute 的名字。
  *
  *	<item> attribute_length
+ *	指出接下来的attribute信息有多少byte。
+ *
+ *	<item> info[]
+ *	各种预定义的类文件 attribute:
  *
  */
 public class Attributes {
