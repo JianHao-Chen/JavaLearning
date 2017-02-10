@@ -48,6 +48,34 @@ import java.lang.annotation.RetentionPolicy;
  *			每一个element_value_pairs[]中的元素,都包含以下2部分:
  *			<1> element_name_index
  *				
+ *			<2> value -- (element_value)
+ *
+ *			【element_value的结构】 
+ *	#########################################################
+ *		element_value {
+			u1 tag;
+			union {
+				u2 const_value_index;
+				{ 
+					u2 type_name_index;
+					u2 const_name_index;
+				} enum_const_value;
+				u2 class_info_index;
+				annotation annotation_value;
+				{ 
+					u2 num_values;
+					element_value values[num_values];
+				} array_value;
+			} value;
+		}
+ *	
+ *		<item> tag
+ *		这个注解的element-value pair的类型
+ *		<item> value
+ *		这个注解的element,这是一个union。
+ *		
+ *	#########################################################
+ *	
  *
  *
  *		~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	
