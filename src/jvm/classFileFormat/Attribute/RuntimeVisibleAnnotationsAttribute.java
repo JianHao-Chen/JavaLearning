@@ -72,7 +72,24 @@ import java.lang.annotation.RetentionPolicy;
  *		<item> tag
  *		这个注解的element-value pair的类型
  *		<item> value
- *		这个注解的element,这是一个union。
+ *		这个注解的element,这是一个union。tag的值,决定这个value的union是哪一个。
+ *			<union> const_value_index
+ *				如果tag 是  B ,  C ,  D ,  F ,I ,  J ,  S ,  Z , or  s
+ *			 	则 这个union是一个常量池entry(指向基本类型、string)的index。
+ *
+ *			<union> enum_const_value
+ *				如果tag 是  e ,则 这个union包含2部分:
+ *				<enum> type_name_index
+ *					enum 的类型
+ *				<enum> const_name_index
+ *					enum 的值
+ *
+ *			<union> class_info_index
+ *				如果tag 是  c , 这个union是一个常量池entry(表示class)的index。
+ *			
+ *			<union> annotation_value
+ *			<union> array_value
+ * 			
  *		
  *	#########################################################
  *	
@@ -82,20 +99,7 @@ import java.lang.annotation.RetentionPolicy;
  */
 public class RuntimeVisibleAnnotationsAttribute {
 	
-	@Todo(priority = Todo.Priority.MEDIUM, author = "Yashwant", status = Todo.Status.STARTED)
-	public void F(){
-		
-	}
-	
 }
 
 
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
-@interface Todo {
-	public enum Priority {LOW, MEDIUM, HIGH}
-	public enum Status {STARTED, NOT_STARTED}
-	String author() default "Yash";
-	Priority priority() default Priority.LOW;
-	Status status() default Status.NOT_STARTED;
-}
+
