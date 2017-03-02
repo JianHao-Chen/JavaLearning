@@ -2,7 +2,7 @@ package jdkSrc.collection.list;
 
 import java.util.Iterator;
 
-public interface ListIterator<E> extends Iterator {
+public interface ListIterator<E> extends Iterator<E> {
 
     // Query Operations
     
@@ -32,6 +32,21 @@ public interface ListIterator<E> extends Iterator {
      * repeatedly to iterate through the list backwards
      */
     E previous();
+    
+    
+    /**
+     * Returns the index of the element that would be returned by a subsequent
+     * call to <tt>next</tt>. (Returns list size if the list iterator is at the
+     * end of the list.)
+     */
+    int nextIndex();
+    
+    /**
+     * Returns the index of the element that would be returned by a subsequent
+     * call to <tt>previous</tt>. (Returns -1 if the list iterator is at the
+     * beginning of the list.)
+     */
+    int previousIndex();
     
     
     // Modification Operations
