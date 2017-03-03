@@ -79,6 +79,7 @@ public class HashMap<K,V> implements Map<K,V>{
         
         threshold = (int)(capacity * loadFactor);
         table = new Entry[capacity];
+        init();
     }
     
     /**
@@ -88,6 +89,7 @@ public class HashMap<K,V> implements Map<K,V>{
     public HashMap() {
         threshold = (int)(DEFAULT_INITIAL_CAPACITY * DEFAULT_LOAD_FACTOR);
         table = new Entry[DEFAULT_INITIAL_CAPACITY];
+        init();
     }
     
     /**
@@ -121,6 +123,12 @@ public class HashMap<K,V> implements Map<K,V>{
      */
     static int indexFor(int h, int length) {
         return h & (length-1);
+    }
+    
+    /**
+     * Initialization hook for subclasses.
+     */
+    void init() {
     }
     
     /**
@@ -287,6 +295,7 @@ public class HashMap<K,V> implements Map<K,V>{
                      table[i] = next;
                  else
                      prev.next = next;
+                 e.recordRemoval(this);
                  return e;
              }
              prev = e;
@@ -360,6 +369,20 @@ public class HashMap<K,V> implements Map<K,V>{
 	        return getKey() + "=" + getValue();
 	    }
 		
+		/**
+         * This method is invoked whenever the value in an entry is
+         * overwritten by an invocation of put(k,v) for a key k that's already
+         * in the HashMap.
+         */
+		void recordAccess(HashMap<K,V> m) {
+        }
+		
+		/**
+         * This method is invoked whenever the entry is
+         * removed from the table.
+         */
+        void recordRemoval(HashMap<K,V> m) {
+        }
 	}
     
     
