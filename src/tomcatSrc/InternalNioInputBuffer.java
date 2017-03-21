@@ -43,10 +43,6 @@ package tomcatSrc;
  *          socket.getBufHandler().getReadBuffer().flip();
  *          // 将ByteBuffer里面的数据转移到buf[]数组。
  *          socket.getBufHandler().getReadBuffer().get(buf,pos,nRead);
- *      
- *      
- *      
- *      
  *      }
  *      
  *   
