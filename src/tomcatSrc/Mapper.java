@@ -46,11 +46,27 @@ package tomcatSrc;
  *      
  *  <三> Mapper数据的读入
  *  
- *      <1> 在Connector中被初始化:
+ *      <1> 作为Connector的成员,在Connector对象初始化时创建Mapper对象:
  *          protected Mapper mapper = new Mapper();
- *     
- * 
- * 
+ *          // 还有创建了MapperListener对象。
+ *          protected MapperListener mapperListener = new MapperListener(mapper, this);
+ *          
+ *      <2> 在Connector的start()方法
+ *              调用 mapperListener.init();
+ *          init方法里面,包含了 :
+ *              registerEngine();
+ *              registerHost();     -->     mapper.addHost()
+ *              registerContext();  -->     mapper.addContext()
+ *              registerWrapper();  -->     mapper.addWrapper()
+ *          
+ *      <3> addHost()方法
+ *          创建新的Mapper.$Host对象,并保存到hosts数组中,hosts数组的元素是按照名字排序的。
+ *      
+ *      <4> addContext()
+ *          先根据hostName来查找要添加到的mappedHost对象,然后这个mappedHost对象有一个
+ *          ContextList,其实也就是一个MappedContext对象数组，然后接着就根据当年context的
+ *          名字，创建一个新的MappedContext对象根据context的path的排序加入到contextList
+ *          数组里面.
  */
 public class Mapper {
 

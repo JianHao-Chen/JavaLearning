@@ -32,7 +32,10 @@ package tomcatSrc;
  *      <a> 解析path parameters
  *          这里默认的参数格式是  /path;name=value;name2=value2/
  *          
- *      <b> 调用Mapper的map()方法,对请求的URI进行解析,即查找对应的context.
+ *      <b> 调用Mapper的map()方法,对请求的URI进行解析,即查找对应的context和wrapper,
+ *          将信息保存在MappingData对象里面,然后设置Request对象的context为对应的
+ *          StandardContext对象,设置wrapper为对应的StandardWrapper对象。
+ *          
  *      
  *      <c> 解析session Id
  *      
