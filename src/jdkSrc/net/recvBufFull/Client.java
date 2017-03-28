@@ -21,8 +21,9 @@ public class Client {
         
         InputStream in = socket.getInputStream();
         int r = 0;
-        while((r=in.read())!=-1){
-            System.out.print((char)r);
+        byte[] bs = new byte[9999999];
+        while((r = in.read(bs, 0, 9999999))!=-1){
+            System.out.print(r);
         }
         
     }

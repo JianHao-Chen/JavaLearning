@@ -60,14 +60,19 @@ public class SelectSockets {
                     channel.socket().setSendBufferSize(1);
                     
                     registerChannel(selector, channel,
-                            SelectionKey.OP_READ);
+                            SelectionKey.OP_READ | SelectionKey.OP_WRITE);
                     
-                    sayHello(channel);
+                    //sayHello(channel);
+                    
                 }
                 
                 // Is there data to read on this channel?
                 if (key.isReadable()) {
                     readDataFromSocket(key);
+                }
+                
+                if(key.isWritable()){
+                    sendData(key);
                 }
                 
                 // Remove key from selected set; it's been handled
@@ -102,7 +107,8 @@ public class SelectSockets {
      * thread is servicing all the channels, so no danger 
      * of concurrent acccess.
      */
-    private ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+    private static int bufferSize = 9999999;
+    private ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
     
     
     /**
@@ -149,6 +155,29 @@ public class SelectSockets {
         buffer.put("Hi there!\r\n".getBytes());
         buffer.flip();
         channel.write(buffer);
+    }
+    
+    private void sendData(SelectionKey key) throws Exception{
+        SocketChannel channel = (SocketChannel) key.channel();
+        byte[] bs = new byte[bufferSize];
+        int time = 0;
+        while(true){
+            
+            for(int i=0;i<bufferSize;i++){
+                bs[i] = (byte)time;
+            }
+            
+            buffer.clear();
+            buffer.put(bs);
+            buffer.flip();
+            int writen = channel.write(buffer);
+            if(writen==0){
+                System.out.println("SocketChannel write return 0!!");
+                System.out.println("time is "+time);
+                break;
+            }
+            time++;
+        }
     }
     
     

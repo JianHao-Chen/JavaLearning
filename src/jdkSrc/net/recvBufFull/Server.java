@@ -12,7 +12,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 public class Server {
-
+    public static int PORT_NUMBER = 1234;
+    
     /*public static void main(String[] args) throws IOException{
         InetAddress address=InetAddress.getLocalHost();
         ServerSocket ss = new ServerSocket(30000);
@@ -35,20 +36,25 @@ public class Server {
     }*/
     
     public static void main(String[] args) throws Exception {
-        ServerSocketChannel serverSock = ServerSocketChannel.open();
-        InetAddress address = InetAddress.getLocalHost();
-        InetSocketAddress addr = new InetSocketAddress(address,1234);
-        int backlog = 1;
-        serverSock.socket().bind(addr,backlog); 
-        serverSock.configureBlocking(true);
+        // Allocate an unbound server socket channel
+        ServerSocketChannel serverChannel = ServerSocketChannel.open();
         
+        // Get the associated ServerSocket to bind it with
+        ServerSocket serverSocket = serverChannel.socket();
+        
+        // Set the port the server channel will listen to
+        serverSocket.bind(new InetSocketAddress(PORT_NUMBER));
+        
+        // Set nonblocking mode for the listening socket
+        serverChannel.configureBlocking(true);
+
         byte[] bs = new byte[1000];
         for(int i=0;i<1000;i++)
             bs[i] = (byte)3;
         
-        SocketChannel socket = serverSock.accept();
+        SocketChannel socket = serverChannel.accept();
         
-        socket.configureBlocking(false);
+        //socket.configureBlocking(false);
         Socket s = socket.socket();
         
         s.setSendBufferSize(1);
