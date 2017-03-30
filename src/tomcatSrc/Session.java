@@ -25,7 +25,7 @@ package tomcatSrc;
  * 
  *---------------------------------------------------------------------------
  *
- *  Session的获取/创建:
+ *  Session的创建:
  *  当调用request的getSession()方法而当前request没有session的话,默认是会创建一个的。
  *  
  *  其中的 doGetSession(boolean create)方法: //create==true表示session为空或失效时创建一个
@@ -53,10 +53,43 @@ package tomcatSrc;
  *              " Set-Cookie = JSESSIONID=SessionID--1; Path=/examples "
  *  } 
  * 
+ *  
+ *      
+ *  Session的获取:
+ *  当浏览器再次访问时,会在Request的请求头带上  "Cookie : JSESSIONID=SessionID--4"。
+ *  
+ *  <1> 获取RequestedSessionId
+ *  CoyoteAdapter的parseSessionCookiesId()方法,是用于解析请求头的Cookie的,比如从header
+ *  中解析出 Cookies对象,其中ServerCookie[0]是"Cookie JSESSIONID=SessionID--4",
+ *  接着找出这个ServerCookie[0],依据是ServerCookie的name是"JSESSIONID",然后把这个
+ *  ServerCookie的value即"SessionID--4"的值赋给request的RequestedSessionId。
+ *  
+ *  <2> 找出session
+ *  doGetSession(boolean create)方法:
+ *  {
+ *      // XXXXX
+ *      session = manager.findSession(requestedSessionId);
+ *  }
+ *  
+ *  而manager中保存着session的Map:
+ *      protected Map<String, Session> sessions = new ConcurrentHashMap<String, Session>();
+ *      
+ *  
  *      
  *      
  *      
- *      
+ *  对于浏览器不支持Cookie的情况:
+ *  
+ *      可以通过 调用 response.encodeURL("SessionExample"),“SessionExample”是Context Name.
+ *      得到 : SessionExample;jsessionid=SessionID--1
+ *  
+ *  然后,浏览器得到的URL会是: http://.../SessionExample;jsessionid=SessionID--1
+ *  
+ *  在CoyoteAdapter解析 PathParameters 时, 会把 " jsessionid=SessionID--1 "
+ *  作为参数添加到request的 pathParameters(这是一个HashMap)
+ *  
+ *  随后会从PathParameter中取出key为jsessionid的值即"SessionID--1",并设置到
+ *  RequestedSessionId中.
  *      
  */
 
