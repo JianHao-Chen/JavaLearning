@@ -1,5 +1,11 @@
 package tomcatSrc;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
+
+
 /**
  * 目的:
  *  Session的主要数据被存储在服务器内存中，而服务器会为每个在线用户创建一个Session对象，
@@ -47,8 +53,50 @@ package tomcatSrc;
  *          这个值,就换出n个session,直到session数目<maxActiveSessions。
  *      
  *      
- *  
- *  
+ *  PersistentManager的换出/换入(通过 swapOut()/swapIn()方法实现):
+ *      
+ *      swapOut(Session session){
+ *          <1>
+ *          writeSession(session) : {
+ *              store.save(session);
+ *          }
+ *          <2>
+ *          sessions.remove(session.getIdInternal());
+ *      }
+ *      
+ *      // 给定一个sessionID,从Store中寻找对应的session。如果找到,就把它restore
+ *      // 到manager的active session列表里面。
+ *      Session swapIn(String id){  
+ *          
+ *          session = store.load(id);
+ *          
+ *          if(!session.isvalid()){
+ *              session.expire();
+ *              removeSession(id);  // 调用 store.remove(id);
+ *          }
+ *          else{
+ *              sessions.put(session.getIdInternal(), session);
+ *              session.access();
+ *          }
+ *      }
+ *   
+ *   FileStore的 save()方法:
+ *   {
+ *      File file = file(session.getIdInternal());
+ *      
+ *      //打开Stream类
+ *      FileOutputStream fos = new FileOutputStream(file.getAbsolutePath());
+ *      ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(fos));
+ *      
+ *      // 调用standardSession的writeObject方法
+ *      writeObject(ObjectOutputStream stream){
+ *          调用stream.writeObject(),依次写入:
+ *              (creationTime,lastAccessedTime,maxInactiveInterval,
+ *              isNew,isValid,thisAccessedTime,id)
+ *      }
+ *   }
+ *   FileStore的 load()方法: 与save()相似。
+ *      
  *  
  */
 
