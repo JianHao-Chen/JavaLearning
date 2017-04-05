@@ -1,5 +1,7 @@
 package tomcatSrc.cluster;
 
+import java.io.Serializable;
+
 /**
  *  <一> 作用:
  *      Membership service的实现, 使用简单的多播。
@@ -61,10 +63,61 @@ package tomcatSrc.cluster;
  *          <d> 如果这个MemberImpl不是 local Member,就把它加入到保存着的
  *              MemberImpl[]数组中.    
  *          
- *          
- *          
+ *          <e> 新建一个线程,运行 McastService的 memberAdded()方法,
+ *              为了运行listener(ChannelCoordinator)的memberAdded()方法.
+ *              通过Interceptor链依次调用memberAdded()方法, 其中在
+ *              TcpFailureDetector中保存的  membership信息中添加这个 member。
  *        }
  *      
+ *      
+ *      
+ *   <五> 删除一个 Member的过程 :
+ *      每个节点都会在执行McastServiceImpl的receive()方法的最后,进行检查。
+ *      检查是通过执行 checkExpired()方法完成的。
+ *      这个方法会遍历本节点保存的   membership 中的所有 member, 然后调用
+ *      membership的removeMember()方法,删除在membership中保存的此member。
+ *      同样,这个方法也会新建一个线程来执行 CallBack操作,通过运行 McastService的
+ *      memberDisappeared()方法, 进而调用 ChannelCoordinator的
+ *      memberDisappeared()方法。 通过Interceptor链,将会调用TcpFailureDetector
+ *      来处理:
+ *          它会先拦下这个member关闭的信息,然后按照这个member的 host、port来建立TCP
+ *          连接。只有这个member真的down了,才会继续通知上层的Interceptor.
+ *      
+ *      
+ *      
+ *      
+ *   <六> 发送一个session给其他member :  
+ *      
+ *      <1> DeltaManager在调用createSession()后,先构造出SessionMessage对象,
+ *          SessionMessage的结构是:
+ *          {
+ *              contextName,        // "localhost#/examples"
+ *              EvtType,            // SessionMessage.EVT_SESSION_CREATED
+ *              mSession,           // 序列化的Session
+ *              mSessionID,         // Session ID
+ *              ....
+ *          }
+ *          然后调用SimpleTcpCluster的send()方法。
+ *      
+ *      <2> SimpleTcpCluster会调用GroupChannel的
+ *              send(Member[] destination, Serializable msg, int options);
+ *          
+ *          <a> 创建ChannelData对象,ChannelData的结构是:
+ *              {
+ *                  address,    //LocalMember
+ *                  message,    // 序列化的SessionMessage
+ *                  options,
+ *                  timestamp,
+ *                  uniqueld
+ *              }
+ *          <b> 通过 Interceptor链调用sendMessage()方法
+ *          <c> MessageDispatch15Interceptor的sendMessage()方法,会根据
+ *              ChannelData里面的options被设置为 Channel.SEND_OPTIONS_ASYNCHRONOUS,
+ *              会把data放入自己的队列里面进行异步发送,并且马上返回。(因为需要尽快返回到Servlet
+ *              然后返回Response给用户)。
+ *          <d> 所谓"异步"其实只是  使用 ThreadPoolExecutor执行发送方法,最后还是调用到
+ *              ChannelCoordinator的sendMessage()方法。
+ *          
  *      
  */
 
