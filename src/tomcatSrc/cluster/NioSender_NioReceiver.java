@@ -1,5 +1,7 @@
 package tomcatSrc.cluster;
 
+import java.nio.channels.SelectionKey;
+
 /**
  * <一>  NioSender
  *  
@@ -68,7 +70,7 @@ package tomcatSrc.cluster;
  *      NioReceiver作为GroupChannel的接收器,用于接收信息。
  *      
  *   【使用】
- *      NioSender的使用有以下几步:
+ *      NioReceiver的使用有以下几步:
  *      
  *      <1> select
  *      
@@ -113,6 +115,69 @@ package tomcatSrc.cluster;
  *          int pkgcnt = reader.count();
  *          //将byte数据转换为ChannelMessage
  *          ChannelMessage[] msgs = reader.execute()    
+ *      
+ *      
+ *---------------------------------------------------------------------
+ *
+ *  【tribes组件使用 ACK】
+ *  
+ *  <1> 设置
+ *  
+ *      在SimpleTcpCluster中设置 channelSendOptions 为:
+ *         channelSendOptions = Channel.SEND_OPTIONS_USE_ACK | Channel.SEND_OPTIONS_SYNCHRONIZED_ACK;
+ *      然后,在MessageDispatch15Interceptor的sendMessage()方法时,会直接调用
+ *      sendMessage()方法,而不是默认的放入线程池。这样会等到后面得到ACK才返回。
+ *      
+ *  <2> NioSender
+ *      在NioSender处理SelectionKey的process()方法里面,在向SocketChannel写完
+ *      数据以后,为读取对方返回的ACK向SocketChannel注册读事件:
+ *      
+ *      !!  注意 , SocketChannel 是被配置为 non blocking的    !!
+ *      
+ *      ...
+ *      else if ( key.isWritable() ) {
+ *          boolean writecomplete = write(key);
+ *          if ( writecomplete ) {
+ *              if ( waitForAck ) {
+ *                  key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+ *              }
+ *              else
+ *                  ...
+ *          }
+ *      }
+ *      
+ *      而对于读事件的处理:
+ *      
+ *      else if ( key.isReadable() ) {
+ *          boolean readcomplete = read(key);
+ *          if ( readcomplete ) {
+ *              ...
+ *              return true;
+ *          }
+ *          else {
+ *              key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+ *          }
+ *      }
+ *      
+ *      
+ *   <3> NioReceiver
+ *       在 drainChannel()方法,把数据转换为ChannelMessage,并且已经通知Cluster
+ *       及其上层组件后,会判断是否需要返回一个ACK。
+ *       
+ *          if (ChannelData.sendAckSync(msgs[i].getOptions()))
+ *              sendAck(key,channel,Constants.ACK_COMMAND);
+ *              
+ *          sendAck(SelectionKey key, SocketChannel channel, byte[] command){
+ *                //省略try catch
+ *              ByteBuffer buf = ByteBuffer.wrap(command);
+ *              int total = 0;
+ *              while ( total < command.length ) {
+ *                  total += channel.write(buf);
+ *              }
+ *          }
+ *    
+ *     
+ *         
  *      
  */
 

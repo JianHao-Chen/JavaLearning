@@ -1,7 +1,5 @@
 package tomcatSrc.cluster;
 
-import java.io.Serializable;
-
 /**
  *  <一> 作用:
  *      Membership service的实现, 使用简单的多播。
@@ -118,7 +116,33 @@ import java.io.Serializable;
  *          <d> 所谓"异步"其实只是  使用 ThreadPoolExecutor执行发送方法,最后还是调用到
  *              ChannelCoordinator的sendMessage()方法。
  *          
+ *          
+ *          
+ *   <七> 接收一个来自其他member的session :
  *      
+ *      <1> tribes接收到一个ChannelData以后（确切的说是NioReplicationTask,它是由NioReceiver生成,
+ *          用于读取、处理SocketChannel中的数据）,调用 :
+ *              getCallback().messageDataReceived(msgs[i]);
+ *          来处理ChannelData。其中getCallback()得到的是NioReceiver。
+ *      
+ *      <2> NioReceiver调用:
+ *              listener.messageReceived(data);
+ *          listener是ChannelCoordinator。
+ *          然后,就是通过 Interceptor链的messageReceived()方法。
+ *          
+ *      <3> Interceptor链的最上层是GroupChannel, 它将ChannelData中的message(XByteBuffer类型)
+ *          反序列化,得到SessionMessageImpl。
+ *          
+ *      <4> SimpleTcpCluster作为GroupChannel的channelListeners,会被调用这个方法:
+ *              messageReceived(Serializable message, Member sender)
+ *              
+ *      <5> SimpleTcpCluster通过clusterListeners调用ClusterSessionListener,
+ *          ClusterSessionListener取得ClusterManager,调用ClusterManager的
+ *          messageDataReceived()方法。
+ *          
+ *      <6> ClusterManager的messageReceived(SessionMessage msg, Member sender)方法:
+ *          根据SessionMessageImpl中的EventType,调用不同的handleXXX()方法。
+ *          
  */
 
 public class McastServiceImpl {
