@@ -97,41 +97,80 @@ package tomcatSrc;
  *                  if (entry == null)
  *                      throw new ClassNotFoundException(name);
  *                      
- *                  Class clazz = entry.loadedClass;
+ *                  // 将Class的字节数组转换为 Class对象
  *                  
- *                      
+ *                  clazz = defineClass(name, entry.binaryContent, 0,
+ *                      entry.binaryContent.length,
+ *                      new CodeSource(entry.codeBase, entry.certificates));
+ *                  
+ *                  entry.loadedClass = clazz;
+ *                  entry.binaryContent = null;
+ *                  ......
  *                  
  *              ``````````````````````````````````````````````````
  *              
- *              
  *              findResourceInternal(String name, String path)方法:
+ *              作用是在本地的repositories里面找
  *              `````````````````````````
+ *                  // resourceEntries是 HashMap,作为缓存
  *                  ResourceEntry entry = (ResourceEntry) resourceEntries.get(name);
  *                  if (entry != null)
  *                      return entry;
  *                  
+ *                  // 缓存没有,就在自己的repositories里面找
  *                  for (i = 0; (entry == null) && (i < repositoriesLength); i++) {
  *                      
  *                      String fullPath = repositories[i] + path;
  *                        // 得到fullPath为 : " /WEB-INF/classes/CookieExample.class "
  *                      
+ *                      // resources是DirContext对象(directory context的意思,目录上下文),
+ *                      // 代表这个Webapp的resources
  *                      Object lookupResult = resources.lookup(fullPath);
  *                        // 得到lookupResult为FileResource对象
  *                        
  *                      ResourceAttributes attributes =
  *                          (ResourceAttributes) resources.getAttributes(fullPath);
  *                        // 得到attributes为FileResourceAttributes对象
+ *                        
+ *                      // 创建entry对象,并把资源的绝对路径保存在entry里面
+ *                      entry = findResourceInternal(files[i], path);
+ *                      
+ *                      contentLength = (int) attributes.getContentLength();
+ *                      entry.lastModified = attributes.getLastModified();
+ *                      
+ *                      // 做的仅仅是为resource所代表的文件打开FileInputStream,并把
+ *                      // 引用赋给了resource里面的 inputStream
+ *                      InputStream binaryStream = resource.streamContent();
+ *                      
+ *                      // 读取文件内容, 并把字节数组的引用保存在entry
+ *                      byte[] binaryContent = new byte[contentLength];
+ *                      int pos = 0;
+ *                      while (true) {
+ *                          int n = binaryStream.read(binaryContent, pos,
+ *                                  binaryContent.length - pos);
+ *                          if (n <= 0) break;
+ *                          pos += n;        
+ *                      }
+ *                      
+ *                      entry.binaryContent = binaryContent;
  *                      
  *                      
- *                      
- *                      
+ *                      // 将这个entry保存在缓存里面
+ *                      synchronized (resourceEntries) {
+ *                          ResourceEntry entry2 = (ResourceEntry) resourceEntries.get(name);
+ *                          if (entry2 == null)
+ *                              resourceEntries.put(name, entry);
+ *                          else
+ *                              entry = entry2;
+ *                          return entry;
+ *                      }
  *                  }
- *              
- *              
- *              
  *              `````````````````````````
  *              
- *              
+ *        <e> 委托给父类加载器
+ *          
+ *        
+ *        
  */
 
 public class CLassLoader {
