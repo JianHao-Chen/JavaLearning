@@ -168,9 +168,86 @@ package tomcatSrc;
  *              `````````````````````````
  *              
  *        <e> 委托给父类加载器
+ *        
+ *          if (!delegateLoad) {    // delegateLoad默认是false
+ *              ClassLoader loader = parent;
+ *              clazz = loader.loadClass(name);
+ *              ...
+ *          }
+ *        
+ *  
+ *-------------------------------------------------------------------------
+ *
+ *    classLoader的 “reload”
+ *    
+ *        
+ *    【配置】:
+ *    
+ *      在 server.xml 里面, Context标签 中的 “reloadable”变量设置为 true ,
+ *      则这个classloader的仓库里面的资源发送改变, 资源会被reload.
+ *      
+ *          ``
+ *          <Context docBase="examples" path="/examples" reloadable="true"> 
+ *          ``
+ *    
+ *    【backgroundProcess】
+ *    
+ *      (1) WebappLoader的backgroundProcess()方法被调用
+ *      (2) 调用WebappClassLoader的modified()方法,检查每一个resources的
+ *          lastModifiedDate。
+ *      (3) 如果仓库中有任何一个文件被改动了,就调用StandardContext的reload()方法。
+ *      
+ *      
+ *    【modified()方法】
+ *    
+ *      (1) WebappClassLoader有以下2个属性:
+ *      
+ *          long[] lastModifiedDates;   // 资源的上次修改时间
+ *          String[] paths;             // 记录资源的名称
+ *      
+ *      (2) 对资源是否被修改的判断:
+ *      
+ *        for(...){
+ *          long lastModified = ((ResourceAttributes) 
+ *                  resources.getAttributes(paths[i])).getLastModified();
+ *          if (lastModified != lastModifiedDates[i]) {
+ *              return (true);
+ *          }
+ *          ...
+ *        }
+ *        
+ *        
+ *        
+ *     【reload()方法】
+ *     
+ *       (1) 暂时停止接受请求,通过2部分实现
+ *           <1> 当前线程(backgroundProcess)将StandardContext的 paused字段
+ *               置为true.
+ *           <2> 在StandardContextValve的invoke()方法里面,会对当前的Context是否
+ *               暂停进行判断,如果是(这个处理请求的线程)就进入睡眠。
+ *           
+ *               ```
+ *                  boolean reloaded = false;
+ *                  while (context.getPaused()) {
+ *                      reloaded = true;
+ *                      try { 
+ *                          Thread.sleep(1000);
+ *                      } 
+ *                      catch (InterruptedException e) {;}
+ *                  }
+ *                  
+ *               ```
+ *               
+ *       (2) 停止这个StandardContext (stop()方法)
+ *           <1> 设置这个Context的available标志为 false
+ *               这样会导致请求处理线程得到503的Response！
+ *               
+ *               因为在 StandardWrapperValve的 invoke()方法里面会对Context的
+ *               available标志进行检查:
+ *               
+ *               
+ *           <2> 
  *          
- *        
- *        
  */
 
 public class CLassLoader {

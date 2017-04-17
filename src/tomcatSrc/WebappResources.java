@@ -195,6 +195,54 @@ package tomcatSrc;
  *      
  *   ```````````````````````````````````
  *   
+ *------------------------------------------------------------------------
+ *   
+ *   关于ResourceCache需要移除失效缓存的情况:
+ *   
+ *   (1)
+ *      在ProxyDirContext的cacheLookup()方法:
+ *      
+ *      ....
+ *      CacheEntry cacheEntry = cache.lookup(name);
+ *      if (cacheEntry == null) {
+ *          // 生成新的CacheEntry并放入cache
+ *          ...
+ *      }
+ *      else{
+ *          // 找到缓存,需要validate
+ *          if (!revalidate(cacheEntry)){
+ *              // revalidate通过检查缓存中 ResourceAttributes的LastModified Date
+ *              // 和ContentLength与现在文件的比较,不符合就返回false(文件已被删除也返回false);
+ *              cacheUnload(cacheEntry.name);
+ *              return (null);
+ *          }
+ *          else
+ *              cacheEntry.timestamp = System.currentTimeMillis() + cacheTTL;
+ *      }
+ *      
+ *      
+ *   (2)
+ *      ProxyDirContext的cacheUnload(String name)方法:
+ *      
+ *          synchronized (cache) {
+ *              boolean result = cache.unload(name);
+ *              return result;
+ *          }
+ *      
+ *      ResourceCache的unload(String name)方法:
+ *          
+ *          CacheEntry removedEntry = removeCache(name);
+ *          if (removedEntry != null) {
+ *              cacheSize -= removedEntry.size;
+ *              return true;
+ *          }
+ *          return false;
+ *      
+ *      removeCache()方法就是使用System.arraycopy来移除数组中的一项.
+ *      
+ *      
+ *      
+ *   
  *   
  *   
  */
