@@ -240,14 +240,44 @@ package tomcatSrc;
  *               
  *       (2) 停止这个StandardContext (stop()方法)
  *           <1> 设置这个Context的available标志为 false
- *               这样会导致请求处理线程得到503的Response！
- *               
- *               因为在 StandardWrapperValve的 invoke()方法里面会对Context的
- *               available标志进行检查:
- *               
- *               
- *           <2> 
- *          
+ *           <2> 设置这个Context下的所有StandardWrapper的available标志为 false
+ *           <3> 执行这个Context所关联的manager的stop()
+ *               --> 当然要Expire所有sessions,并且把有效的session持久化
+ *           <4> 执行这个Context所关联的pipeline的stop(),解除pipeline上所有的Valve
+ *              (Context的start()方法会导致相关配置文件的重新读取解析,Valve的配置可能
+ *               会变动)。
+ *           <5> 将StandardContext的resources引用置null,另相关对象被回收。
+ *           
+ *   【!重要!】   <6> WebappLoader的stop()
+ *   
+ *              调用WebappClassLoader的stop()方法:
+ *                 {
+ *                   clearReferences(); 
+ *                   started = false;
+ *                  
+ *                   将以下的属性置为null:
+ *                      File[] files;
+ *                      HashMap resourceEntries; (先调用 clear())
+ *                      DirContext resources; (实际上是ProxyDirContext类型)
+ *                      String[] repositories;
+ *                      ...
+ *                 }
+ *                
+ *                  clearReferences()方法清除的内容:
+ *                  {
+ *                    -> 注销仍然存在的JDBC drivers
+ *                    -> 清除ThreadLocal的引用
+ *                    ...
+ *                  }  
+ *           
+ *           
+ *       (3) 启动这个StandardContext (start()方法) 
+ *           当然是启动StandardContext下的各个组件。
+ *           --> WebappLoader:
+ *                  需要新建WebappClassLoader（新建！新建！新建！）
+ *                  需要重新设置Repositories
+ *           --> pipeline及其Valve
+ *           
  */
 
 public class CLassLoader {
