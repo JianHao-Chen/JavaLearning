@@ -46,6 +46,11 @@ package tomcatSrc;
  *      
  *  <三> Mapper数据的读入
  *  
+ *      【原理】
+ *          在Tomcat的各个容器(Engin、Host、Context)初始化的最后,会将自己注册到JMX,
+ *          随后在Connector组件启动时,通过mapperListener.init(),会分别从JmxMBeanServer
+ *          查询出各个容器,从而分别调用mapper的addXX()方法,来形成从Host到Wrapper的各级容器的快照
+ *  
  *      <1> 作为Connector的成员,在Connector对象初始化时创建Mapper对象:
  *          protected Mapper mapper = new Mapper();
  *          // 还有创建了MapperListener对象。
@@ -67,6 +72,57 @@ package tomcatSrc;
  *          ContextList,其实也就是一个MappedContext对象数组，然后接着就根据当年context的
  *          名字，创建一个新的MappedContext对象根据context的path的排序加入到contextList
  *          数组里面.
+ *          
+ *          
+ *          
+ *          
+ *  <四> Mapper的使用--请求路径的路由映射
+ *  
+ *      入口 : map(MessageBytes host,MessageBytes uri,MappingData mappingData);
+ *          示例输入:  (localhost , /examples/index.html , mappingData)
+ *          mappingData用于保存这次 mapping的结果
+ *          
+ *          调用  internalMap(CharChunk host, CharChunk uri,MappingData mappingData)
+ *      
+ *      
+ *      internalMap()的内部:
+ *      
+ *      Context[] contexts = null;
+ *      Context context = null;
+ *      
+ *      <1> 找到相应的host,并取出这个host的contextList,保存在mappingData
+ *              Host[] hosts = this.hosts;
+ *              int pos = findIgnoreCase(hosts, host);
+ *              if ((pos != -1) && (host.equalsIgnoreCase(hosts[pos].name))) {
+ *                  mappingData.host = hosts[pos].object;
+ *                  contexts = hosts[pos].contextList.contexts;
+ *              }
+ *              
+ *      <2> 找到相应的context(即在contexts[]数组中找到name为"examples"的一项),
+ *          保存在context变量且保存在mappingData
+ *              ...
+ *              context = contexts[pos];
+ *              
+ *              mappingData.context = context.object;
+ *              mappingData.contextPath.setString(context.name);
+ *              
+ *      <3> 找出相应的wrapper
+ *          (1) 按照精确路径来找(即context的exactWrappers)
+ *              
+ *          (2) 按照通配路径(/*)来找(即context的exactWrappers)
+ *      
+ *          (3) 按照扩展路径(*.)来找(即context的extensionWrappers)
+ *          
+ *          (4) 都找不到才交给defaultWrapper处理
+ *          
+ *                  // 默认是StandardWrapper[default]
+ *                  mappingData.wrapper = context.defaultWrapper.object;
+ *                  // 这里requestPath = "/index.html"
+ *                  mappingData.requestPath.setChars(
+ *                      path.getBuffer(), path.getStart(), path.getLength());        
+ *                  
+ *                  
+ *                  
  */
 public class Mapper {
 
